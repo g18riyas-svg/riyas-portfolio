@@ -1,0 +1,169 @@
+{
+  "contactRevision": 1,
+  "name": "Risme Mohomad Riyas",
+  "role": "Full-stack developer",
+  "headline": "Practical software.\nBuilt around your business.",
+  "intro": "I build web applications, business management systems, and mobile experiences that connect your customers, your team, and your daily operations.",
+  "email": "g.18.riyas@gmail.com",
+  "whatsapp": "+94706442810",
+  "linkedin": "",
+  "github": "",
+  "projects": [
+    {
+      "id": "salon",
+      "title": "Spa & Salon Management",
+      "tagline": "Booking, operations, and customer care\u2014connected.",
+      "category": "WEB \u00b7 POS \u00b7 MOBILE",
+      "summary": "A management system spanning the salon website, staff administration, point of sale, and customer mobile experience.",
+      "problem": "Salon teams need to coordinate services, professional availability, memberships, and the customer journey.",
+      "solution": "Built connected booking and management workflows, including staff availability, multi-service appointments, memberships, and POS integration.",
+      "note": "Web booking, service and product browsing, and administration are shown here. Mobile screenshots will be added later.",
+      "features": [
+        "Booking & availability",
+        "Staff scheduling",
+        "Memberships",
+        "POS workflows"
+      ],
+      "technologies": [
+        "React",
+        "Node.js",
+        "MySQL",
+        "Expo"
+      ],
+      "images": [
+        {
+          "url": "/projects/salon-1.webp",
+          "alt": "Website home"
+        },
+        {
+          "url": "/projects/salon-2.webp",
+          "alt": "Product catalogue"
+        },
+        {
+          "url": "/projects/salon-3.webp",
+          "alt": "Appointment booking"
+        },
+        {
+          "url": "/projects/salon-4.webp",
+          "alt": "Admin dashboard"
+        }
+      ],
+      "liveUrl": "",
+      "githubUrl": "",
+      "published": true
+    },
+    {
+      "id": "fitsync",
+      "title": "FitSync",
+      "tagline": "One platform. Multiple gyms.",
+      "category": "MULTITENANT SAAS \u00b7 MOBILE",
+      "summary": "A multitenant gym management project with owner administration and a connected member application.",
+      "problem": "Gym owners and members need distinct experiences while each gym\u2019s data and configuration remain separate.",
+      "solution": "Developed a multitenant backend, owner dashboard, authentication, and a member app with fitness and community features.",
+      "note": "University team project. My individual responsibilities and team credits can be added in the editor.",
+      "features": [
+        "Tenant management",
+        "Owner dashboard",
+        "Member experience",
+        "Workout journeys"
+      ],
+      "technologies": [
+        "React",
+        "Node.js",
+        "Express",
+        "MySQL",
+        "Expo"
+      ],
+      "images": [
+        {
+          "url": "/projects/fitsync-1.webp",
+          "alt": "Gym owner dashboard"
+        },
+        {
+          "url": "/projects/fitsync-2.webp",
+          "alt": "Member workout screen"
+        },
+        {
+          "url": "/projects/fitsync-3.webp",
+          "alt": "Member home screen"
+        }
+      ],
+      "liveUrl": "",
+      "githubUrl": "",
+      "published": true
+    },
+    {
+      "id": "science",
+      "title": "DiscoverScienceLK",
+      "tagline": "Make learning an experience.",
+      "category": "EDUCATION \u00b7 WEB PLATFORM",
+      "summary": "An education website rebuild connecting quizzes, student progress, achievements, and teacher administration.",
+      "problem": "Learning activities and results need an accessible student experience and practical tools for the teacher.",
+      "solution": "Rebuilt the platform with student and admin dashboards, quiz management, activity filtering, and legacy WordPress data migration.",
+      "note": "Screenshots show the sign-in experience, public home page, and administration dashboard.",
+      "features": [
+        "Quizzes & activities",
+        "Student progress",
+        "Teacher administration",
+        "Legacy migration"
+      ],
+      "technologies": [
+        "Next.js",
+        "Node.js",
+        "MySQL"
+      ],
+      "images": [
+        {
+          "url": "/projects/science-2.webp",
+          "alt": "Learning platform home"
+        },
+        {
+          "url": "/projects/science-1.webp",
+          "alt": "Sign-in page"
+        },
+        {
+          "url": "/projects/science-3.webp",
+          "alt": "Admin dashboard"
+        }
+      ],
+      "liveUrl": "",
+      "githubUrl": "",
+      "published": true
+    },
+    {
+      "id": "riders",
+      "title": "Rider Choice POS",
+      "tagline": "Built for the shop floor.",
+      "category": "DESKTOP \u00b7 POS \u00b7 INVENTORY",
+      "summary": "A point-of-sale and inventory project for a bike modification shop, covering products, purchasing, jobs, and cash movement.",
+      "problem": "A specialist retailer needs billing and stock control that reflect both product sales and modification work.",
+      "solution": "Built POS and inventory workflows with suppliers, purchasing, goods received notes, modification jobs, expenses, and reporting.",
+      "note": "Screenshots show the business dashboard and point-of-sale workspace.",
+      "features": [
+        "Billing & inventory",
+        "Purchasing & GRN",
+        "Modification jobs",
+        "Cash movement"
+      ],
+      "technologies": [
+        "React",
+        "Node.js",
+        "MySQL",
+        "Desktop application"
+      ],
+      "images": [
+        {
+          "url": "/projects/riders-1.webp",
+          "alt": "Business overview"
+        },
+        {
+          "url": "/projects/riders-2.webp",
+          "alt": "Point of sale"
+        }
+      ],
+      "liveUrl": "",
+      "githubUrl": "",
+      "published": true
+    }
+  ]
+}
