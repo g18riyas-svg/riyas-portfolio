@@ -1,5 +1,29 @@
-import {getAdminUser} from '../../../admin-auth';
-import {sameOrigin} from '../../../../lib/auth';
-import {store} from '../../../../lib/storage';
-import {updateInquirySchema,type Inquiry} from '../../../../lib/inquiries';
-export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){if(!await getAdminUser()||!sameOrigin(req))return Response.json({error:'Owner access required'},{status:403});const {id}=await params;if(!/^[a-f0-9-]{36}$/.test(id))return Response.json({error:'Invalid inquiry'},{status:400});const raw=await req.text();if(raw.length>12000)return Response.json({error:'Notes too long'},{status:413});try{const data=updateInquirySchema.parse(JSON.parse(raw));const s=store('inquiries');const old=await s.getWithMetadata(id,{type:'json'});if(!old)return Response.json({error:'Not found'},{status:404});const result=await s.setJSON(id,{...old.data,...data,updated_at:Date.now()},{onlyIfMatch:old.etag});if(!result.modified)return Response.json({error:'Inquiry changed. Refresh before saving.'},{status:409});return Response.json({ok:true})}catch{return Response.json({error:'Could not save inquiry'},{status:400})}}
+import { getAdminUser } from '../../../../lib/auth';
+import { sameOrigin } from '../../../../lib/auth';
+import { store } from '../../../../lib/storage';
+import { updateInquirySchema, type Inquiry } from '../../../../lib/inquiries';
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await getAdminUser()) || !sameOrigin(req))
+    return Response.json({ error: 'Owner access required' }, { status: 403 });
+  const { id } = await params;
+  if (!/^[a-f0-9-]{36}$/.test(id))
+    return Response.json({ error: 'Invalid inquiry' }, { status: 400 });
+  const raw = await req.text();
+  if (raw.length > 12000) return Response.json({ error: 'Notes too long' }, { status: 413 });
+  try {
+    const data = updateInquirySchema.parse(JSON.parse(raw));
+    const s = store('inquiries');
+    const old = await s.getWithMetadata(id, { type: 'json' });
+    if (!old) return Response.json({ error: 'Not found' }, { status: 404 });
+    const result = await s.setJSON(
+      id,
+      { ...old.data, ...data, updated_at: Date.now() },
+      { onlyIfMatch: old.etag },
+    );
+    if (!result.modified)
+      return Response.json({ error: 'Inquiry changed. Refresh before saving.' }, { status: 409 });
+    return Response.json({ ok: true });
+  } catch {
+    return Response.json({ error: 'Could not save inquiry' }, { status: 400 });
+  }
+}

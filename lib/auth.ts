@@ -1,17 +1,85 @@
-import {cookies} from 'next/headers';
-import {createHmac,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
-import {redirect} from 'next/navigation';
-const COOKIE='riyas_admin';
-export function configured(){return Boolean(process.env.ADMIN_PASSWORD_HASH&&process.env.SESSION_SECRET&&process.env.SESSION_SECRET.length>=32);}
-export function validPassword(value:string){try{const [salt,hex]=process.env.ADMIN_PASSWORD_HASH!.split(':');const expected=Buffer.from(hex,'hex');const actual=scryptSync(value,salt,64);return expected.length===actual.length&&timingSafeEqual(actual,expected);}catch{return false;}}
-function sign(s:string){return createHmac('sha256',process.env.SESSION_SECRET!).update(s).digest('base64url');}
-export function sessionValue(){const data=Buffer.from(JSON.stringify({exp:Date.now()+8*60*60*1000,v:createHash('sha256').update(process.env.ADMIN_PASSWORD_HASH!).digest('hex')})).toString('base64url');return data+'.'+sign(data);}
-export async function getAdminUser(){if(!configured())return null;try{const value=(await cookies()).get(COOKIE)?.value||'';const [data,sig]=value.split('.');const a=Buffer.from(sig||'');const b=Buffer.from(sign(data));if(a.length!==b.length||!timingSafeEqual(a,b))return null;const payload=JSON.parse(Buffer.from(data,'base64url').toString());if(payload.exp<Date.now()||payload.v!==createHash('sha256').update(process.env.ADMIN_PASSWORD_HASH!).digest('hex'))return null;return {email:'g.18.riyas@gmail.com'};}catch{return null;}}
-export async function requireAdminUser(path:string){const u=await getAdminUser();if(!u)redirect('/login?returnTo='+encodeURIComponent(path));return u;}
-export function sameOrigin(req:Request){
- const origin=req.headers.get('origin');
- if(!origin)return false;
- const siteUrl=process.env.SITE_URL||process.env.URL;
- try{return origin===new URL(siteUrl||req.url).origin;}catch{return false;}
+import { cookies } from 'next/headers';
+import { createHmac, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
+import { redirect } from 'next/navigation';
+export { sameOrigin } from './site-url';
+
+export const ADMIN_COOKIE = 'riyas_admin';
+const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+const ADMIN_EMAIL = 'g.18.riyas@gmail.com';
+
+function passwordHash(): string {
+  return process.env.ADMIN_PASSWORD_HASH || '';
 }
-export const cookieOptions={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict' as const,path:'/',maxAge:8*60*60};
+
+export function configured(): boolean {
+  const validHash = /^[a-f0-9]{32}:[a-f0-9]{128}$/i.test(passwordHash());
+  return validHash && (process.env.SESSION_SECRET?.length || 0) >= 32;
+}
+
+export function validPassword(password: string): boolean {
+  if (!configured() || password.length < 14 || password.length > 256) return false;
+  try {
+    const [salt, storedHash] = passwordHash().split(':');
+    const expected = Buffer.from(storedHash, 'hex');
+    const actual = scryptSync(password, salt, 64);
+    return expected.length === actual.length && timingSafeEqual(actual, expected);
+  } catch {
+    return false;
+  }
+}
+
+function signSession(payload: string): string {
+  return createHmac('sha256', process.env.SESSION_SECRET!).update(payload).digest('base64url');
+}
+
+function passwordVersion(): string {
+  return createHash('sha256').update(passwordHash()).digest('hex');
+}
+
+export function sessionValue(): string {
+  if (!configured()) throw new Error('Admin login is not configured.');
+  const payload = Buffer.from(
+    JSON.stringify({
+      exp: Date.now() + SESSION_DURATION_MS,
+      v: passwordVersion(),
+    }),
+  ).toString('base64url');
+  return `${payload}.${signSession(payload)}`;
+}
+
+export async function getAdminUser(): Promise<{ email: string } | null> {
+  if (!configured()) return null;
+  try {
+    const value = (await cookies()).get(ADMIN_COOKIE)?.value || '';
+    const parts = value.split('.');
+    if (parts.length !== 2) return null;
+    const [payload, signature] = parts;
+    const supplied = Buffer.from(signature);
+    const expected = Buffer.from(signSession(payload));
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return null;
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (
+      !Number.isFinite(session.exp) ||
+      session.exp <= Date.now() ||
+      session.v !== passwordVersion()
+    )
+      return null;
+    return { email: ADMIN_EMAIL };
+  } catch {
+    return null;
+  }
+}
+
+export async function requireAdminUser(path: string) {
+  const user = await getAdminUser();
+  if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`);
+  return user;
+}
+
+export const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict' as const,
+  path: '/',
+  maxAge: SESSION_DURATION_MS / 1000,
+};

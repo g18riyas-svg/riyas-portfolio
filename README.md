@@ -1,5 +1,7 @@
 # Risme Mohomad Riyas — Netlify portfolio
 
+**Updating an existing deployment? Follow [UPGRADE.md](UPGRADE.md) first.**
+
 This migration includes the four published projects, optimized screenshots, portrait images, animations, WhatsApp, email, inquiry form, password-protected project editor, image uploads, and inquiry inbox. It uses native Next.js and Netlify Blobs. No ChatGPT account is required by visitors or the admin.
 
 ## Deploy from your computer
@@ -29,6 +31,7 @@ This migration includes the four published projects, optimized screenshots, port
    ```
 
    Verify `ADMIN_PASSWORD_HASH` and `SESSION_SECRET` exist in Netlify's environment settings and include the Functions runtime scope. Never commit `.env.netlify` or send passwords in chat. Delete the generated file after import.
+
 6. Run `npx netlify-cli deploy --build --prod`.
 7. Open the URL Netlify returns. Your public URL will be `https://YOUR-SITE-NAME.netlify.app`. The example site name is not reserved or verified.
 8. Visit `/login`, sign in, and test the items below before sharing with clients.
@@ -67,7 +70,6 @@ Keep a secure backup of project content and inquiries. Netlify Blobs is the live
 
 Netlify assigns a `netlify.app` address; set the site name in the Netlify dashboard. Use your own account so you control the URL, files, settings, and inquiries. This archive is prepared for deployment; it is not an already-published Netlify site.
 
-
 ## Activate Gmail notifications
 
 Every new inquiry is saved in Netlify Blobs first, then emailed to **g.18.riyas@gmail.com**. Reply in Gmail to reply directly to the prospective client. Notifications include their name, email, project type, budget, timeline, and message. Sending failure does not lose the inquiry or show an error to the client after it was saved.
@@ -83,3 +85,5 @@ The inbox shows whether email is configured and how many of the latest 500 inqui
 The email sender is your authenticated Gmail address; the client's address is set as Reply-To. Notifications only go to the owner's Gmail address. Gmail may throttle, reject or filter messages; keep the saved admin inbox as the source of truth. Changing your Google password may revoke App Passwords. This package does not include credentials and email delivery is inactive until you configure them.
 
 Email-specific tests: `npm run test:email` checks notification formatting, failure recording, retries and duplicate suppression with a local storage server and a fake mail sender. It sends no real email.
+
+Set SITE_URL in Netlify to your exact public HTTPS website URL (for example https://risme-riyas-portfolio.netlify.app). This allows origin validation behind the Netlify proxy without trusting caller-supplied forwarding headers. Update it if you change domains.

@@ -1,4 +1,42 @@
-import {cookies} from 'next/headers';
-import {configured,validPassword,sessionValue,cookieOptions,sameOrigin} from '../../../../lib/auth';
-import {limited,source} from '../../../../lib/inquiry-store';
-export async function POST(req:Request){if(!sameOrigin(req))return new Response('Invalid origin',{status:403});if(!configured())return new Response('Admin is not configured',{status:503});if(Number(req.headers.get('content-length')||0)>2000)return new Response('Too large',{status:413});try{if(!await limited('login-'+source(req),10,15*60*1000))return Response.redirect(new URL('/login?error=1',req.url),303);const form=await req.formData();const password=String(form.get('password')||'');if(password.length>256||!validPassword(password))return Response.redirect(new URL('/login?error=1',req.url),303);(await cookies()).set('riyas_admin',sessionValue(),cookieOptions);const path=String(form.get('returnTo')||'');return Response.redirect(new URL(path==='/admin/inquiries'?path:'/admin',req.url),303)}catch{return new Response('Login unavailable. Please try again.',{status:503})}}
+import { cookies } from 'next/headers';
+import {
+  ADMIN_COOKIE,
+  configured,
+  validPassword,
+  sessionValue,
+  cookieOptions,
+} from '../../../../lib/auth';
+import { sameOrigin, publicUrl } from '../../../../lib/site-url';
+import { limited, source } from '../../../../lib/inquiry-store';
+
+const MAX_LOGIN_BODY_BYTES = 2000;
+
+export async function POST(request: Request) {
+  if (!sameOrigin(request))
+    return new Response('Invalid origin. Open the login page on your public site URL.', {
+      status: 403,
+    });
+  if (!configured())
+    return new Response(
+      'Admin login is not configured correctly. Check ADMIN_PASSWORD_HASH and SESSION_SECRET.',
+      { status: 503 },
+    );
+  try {
+    const body = await request.text();
+    if (new TextEncoder().encode(body).length > MAX_LOGIN_BODY_BYTES)
+      return new Response('Login request is too large.', { status: 413 });
+    const form = new URLSearchParams(body);
+    const requestedPath = form.get('returnTo');
+    const returnTo = requestedPath === '/admin/inquiries' ? requestedPath : '/admin';
+    const failureUrl = publicUrl('/login', request.url);
+    failureUrl.searchParams.set('error', '1');
+    failureUrl.searchParams.set('returnTo', returnTo);
+    const allowed = await limited(`login-${source(request)}`, 10, 15 * 60 * 1000);
+    if (!allowed || !validPassword(form.get('password') || ''))
+      return Response.redirect(failureUrl, 303);
+    (await cookies()).set(ADMIN_COOKIE, sessionValue(), cookieOptions);
+    return Response.redirect(publicUrl(returnTo, request.url), 303);
+  } catch {
+    return new Response('Login is temporarily unavailable. Please try again.', { status: 503 });
+  }
+}

@@ -18,18 +18,8 @@
       "problem": "Salon teams need to coordinate services, professional availability, memberships, and the customer journey.",
       "solution": "Built connected booking and management workflows, including staff availability, multi-service appointments, memberships, and POS integration.",
       "note": "Web booking, service and product browsing, and administration are shown here. Mobile screenshots will be added later.",
-      "features": [
-        "Booking & availability",
-        "Staff scheduling",
-        "Memberships",
-        "POS workflows"
-      ],
-      "technologies": [
-        "React",
-        "Node.js",
-        "MySQL",
-        "Expo"
-      ],
+      "features": ["Booking & availability", "Staff scheduling", "Memberships", "POS workflows"],
+      "technologies": ["React", "Node.js", "MySQL", "Expo"],
       "images": [
         {
           "url": "/projects/salon-1.webp",
@@ -61,19 +51,8 @@
       "problem": "Gym owners and members need distinct experiences while each gym\u2019s data and configuration remain separate.",
       "solution": "Developed a multitenant backend, owner dashboard, authentication, and a member app with fitness and community features.",
       "note": "University team project. My individual responsibilities and team credits can be added in the editor.",
-      "features": [
-        "Tenant management",
-        "Owner dashboard",
-        "Member experience",
-        "Workout journeys"
-      ],
-      "technologies": [
-        "React",
-        "Node.js",
-        "Express",
-        "MySQL",
-        "Expo"
-      ],
+      "features": ["Tenant management", "Owner dashboard", "Member experience", "Workout journeys"],
+      "technologies": ["React", "Node.js", "Express", "MySQL", "Expo"],
       "images": [
         {
           "url": "/projects/fitsync-1.webp",
@@ -107,11 +86,7 @@
         "Teacher administration",
         "Legacy migration"
       ],
-      "technologies": [
-        "Next.js",
-        "Node.js",
-        "MySQL"
-      ],
+      "technologies": ["Next.js", "Node.js", "MySQL"],
       "images": [
         {
           "url": "/projects/science-2.webp",
@@ -139,18 +114,8 @@
       "problem": "A specialist retailer needs billing and stock control that reflect both product sales and modification work.",
       "solution": "Built POS and inventory workflows with suppliers, purchasing, goods received notes, modification jobs, expenses, and reporting.",
       "note": "Screenshots show the business dashboard and point-of-sale workspace.",
-      "features": [
-        "Billing & inventory",
-        "Purchasing & GRN",
-        "Modification jobs",
-        "Cash movement"
-      ],
-      "technologies": [
-        "React",
-        "Node.js",
-        "MySQL",
-        "Desktop application"
-      ],
+      "features": ["Billing & inventory", "Purchasing & GRN", "Modification jobs", "Cash movement"],
+      "technologies": ["React", "Node.js", "MySQL", "Desktop application"],
       "images": [
         {
           "url": "/projects/riders-1.webp",

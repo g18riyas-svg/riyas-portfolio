@@ -12,7 +12,12 @@
     "start": "next start",
     "check": "tsc --noEmit",
     "admin:setup": "node scripts/admin-setup.mjs",
-    "test:email": "node --import tsx scripts/email-test.ts"
+    "test:email": "node --import tsx scripts/email-test.ts",
+    "format": "prettier --write app components lib scripts *.json *.mjs *.md",
+    "format:check": "prettier --check app components lib scripts *.json *.mjs *.md",
+    "test:origin": "node --import tsx scripts/origin-test.ts",
+    "test:setup": "node scripts/setup-test.mjs",
+    "test:smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "11.1.6",
@@ -27,6 +32,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "prettier": "^3.9.10",
     "tsx": "^4.23.15",
     "typescript": "5.9.3"
   }

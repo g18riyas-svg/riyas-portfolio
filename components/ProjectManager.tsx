@@ -1,21 +1,413 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
-import type {Portfolio,Project} from '../lib/portfolio';
-import {previewUrl} from '../lib/image-preview';
+import { useEffect, useRef, useState } from 'react';
+import type { Portfolio, Project } from '../lib/portfolio';
+import { previewUrl } from '../lib/image-preview';
 import AdminNav from './AdminNav';
-export default function ProjectManager({initial}:{initial:Portfolio}){
- const [data,setData]=useState(initial);const [selected,setSelected]=useState(initial.projects[0]?.id||'');const [dirty,setDirty]=useState(false);const [busy,setBusy]=useState(false);const [uploading,setUploading]=useState(false);const [status,setStatus]=useState('');const file=useRef<HTMLInputElement>(null);const current=useRef(data);current.current=data;
- async function optimizeImage(file:File):Promise<File>{
-  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>3*1024*1024)return file;
-  try{const bitmap=await createImageBitmap(file);const scale=Math.min(1,1800/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);const ctx=canvas.getContext('2d');if(!ctx){bitmap.close();return file}ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/webp',.82));return blob?new File([blob],file.name.replace(/\.[^.]+$/,'')+'.webp',{type:'image/webp'}):file}catch{return file}
- }
- const p=data.projects.find(p=>p.id===selected);
- useEffect(()=>{const f=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=''}};window.addEventListener('beforeunload',f);return()=>window.removeEventListener('beforeunload',f)},[dirty]);
- function change(d:Portfolio){setData(d);setDirty(true);setStatus('')}
- function update(patch:Partial<Project>){change({...data,projects:data.projects.map(x=>x.id===selected?{...x,...patch}:x)})}
- function add(){const id=crypto.randomUUID();change({...data,projects:[...data.projects,{id,title:'New project',tagline:'',category:'WEB APPLICATION',summary:'',problem:'',solution:'',note:'',features:[],technologies:[],images:[],liveUrl:'',githubUrl:'',published:false}]});setSelected(id)}
- async function save(){const snapshot=data;setBusy(true);setStatus('Saving…');try{const r=await fetch('/api/portfolio',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await r.json() as {error?:string};if(!r.ok)throw Error(result.error);if(current.current===snapshot)setDirty(false);setStatus('Saved online. Published projects are now updated on the portfolio.')}catch(e){setStatus('Could not save: '+(e instanceof Error?e.message:'Try again.'))}finally{setBusy(false)}}
- async function upload(fs:FileList|null){if(!fs||!p)return;const target=p.id;setUploading(true);setStatus('Uploading screenshots…');try{const images:{url:string;alt:string}[]=[];for(const f of Array.from(fs)){const form=new FormData();form.append('file',await optimizeImage(f));const r=await fetch('/api/upload',{method:'POST',body:form});const j=await r.json() as {error?:string;url:string};if(!r.ok)throw Error(j.error);images.push({url:j.url,alt:f.name.replace(/\.[^.]+$/,'')})}setData(d=>({...d,projects:d.projects.map(x=>x.id===target?{...x,images:[...x.images,...images]}:x)}));setDirty(true);setStatus('Screenshots uploaded. Save changes to add them to the portfolio.')}catch(e){setStatus('Upload failed: '+(e instanceof Error?e.message:'Try again.'))}finally{setUploading(false);if(file.current)file.current.value=''}}
- function reorder(offset:number){const arr=[...data.projects];const i=arr.findIndex(x=>x.id===selected);if(i+offset<0||i+offset>=arr.length)return;[arr[i],arr[i+offset]]=[arr[i+offset],arr[i]];change({...data,projects:arr})}
- return <main className="admin-shell"><div onClick={e=>{if(dirty&&(e.target as HTMLElement).closest('a')&&!confirm('You have unsaved changes. Leave this page?'))e.preventDefault()}}><AdminNav active="projects"/></div><header className="admin-top"><div><a className="underlink" href="/" onClick={e=>{if(dirty&&!confirm('You have unsaved changes. Leave this page?'))e.preventDefault()}}>← View portfolio</a><h1>Portfolio manager<span>.</span></h1><p>Project content, screenshots, and contact details. Saved online across devices.</p></div><button className="button" disabled={busy||uploading||!dirty} onClick={save}>{busy?'Saving…':dirty?'Save changes ↗':'All changes saved ✓'}</button></header><div className="save-status" role="status">{status||(dirty?'You have unsaved changes.':'Your saved portfolio is up to date.')}</div><details className="profile-settings"><summary>Your profile & contact details</summary><div className="editor-fields">{(['name','role','headline','intro','email','whatsapp','linkedin','github'] as const).map(k=><label key={k}>{k==='whatsapp'?'WhatsApp (include country code)':k==='headline'?'Headline (use a new line for the second line)':k}<textarea rows={k==='intro'?3:k==='headline'?2:1} value={data[k]} onChange={e=>change({...data,[k]:e.target.value})}/></label>)}</div><p className="field-help">Email and WhatsApp become inquiry links on the site. Empty social links stay hidden.</p></details><div className="admin-grid"><aside className="project-sidebar"><div className="sidebar-heading"><h2>Projects ({data.projects.length})</h2><button className="small-button" onClick={add} disabled={busy||uploading}>+ Add</button></div>{data.projects.map((x,i)=><button key={x.id} className={'project-select '+(selected===x.id?'selected':'')} onClick={()=>setSelected(x.id)}><span>0{i+1}</span><div><b>{x.title}</b><small>{x.published?'Published':'Draft'}</small></div></button>)}</aside>{p?<section className="project-editor"><div className="editor-heading"><div><span className="eyebrow">EDIT PROJECT</span><h2>{p.title}</h2></div><label className="toggle"><input type="checkbox" checked={p.published} onChange={e=>update({published:e.target.checked})}/> Published</label></div><div className="editor-fields">{(['title','tagline','category','summary','problem','solution','note','liveUrl','githubUrl'] as const).map(k=><label key={k}>{({title:'Project name',tagline:'Tagline',category:'Project category',summary:'Short description',problem:'The challenge',solution:'The solution / your contribution',note:'Project context / credits',liveUrl:'Live project URL (optional)',githubUrl:'GitHub URL (optional)'})[k]}<textarea rows={['summary','problem','solution','note'].includes(k)?3:1} value={p[k]} onChange={e=>update({[k]:e.target.value})}/></label>)}<label>Technologies (comma separated)<input value={p.technologies.join(', ')} onChange={e=>update({technologies:e.target.value.split(',').map(x=>x.trimStart())})}/></label><label>Features (one per line)<textarea rows={4} value={p.features.join('\n')} onChange={e=>update({features:e.target.value.split('\n')})}/></label></div><div className="screenshots-heading"><div><h3>Screenshots</h3><p>First image is the cover. PNG, JPEG, or WebP, up to 3 MB each.</p></div><button className="small-button" disabled={uploading||busy} onClick={()=>file.current?.click()}>{uploading?'Uploading…':'+ Upload images'}</button><input ref={file} type="file" multiple accept="image/png,image/jpeg,image/webp" hidden onChange={e=>upload(e.target.files)}/></div><div className="admin-images">{p.images.map((im,i)=><div className="admin-image" key={im.url+i}><img src={previewUrl(im.url,160)} alt={im.alt} loading="lazy" decoding="async"/><label>Image description<input value={im.alt} onChange={e=>update({images:p.images.map((x,j)=>i===j?{...x,alt:e.target.value}:x)})}/></label><div className="image-actions"><button className="small-button" disabled={i===0} onClick={()=>update({images:[im,...p.images.filter((_,j)=>i!==j)]})}>{i===0?'Cover image':'Make cover'}</button><button className="small-button danger" onClick={()=>update({images:p.images.filter((_,j)=>i!==j)})}>Remove</button></div></div>)}</div><div className="editor-bottom"><div><button className="small-button" onClick={()=>reorder(-1)} disabled={data.projects[0]?.id===p.id}>↑ Move up</button><button className="small-button" onClick={()=>reorder(1)} disabled={data.projects.at(-1)?.id===p.id}>↓ Move down</button></div><button className="small-button danger" onClick={()=>{if(confirm('Remove this project? The change takes effect when you save.')){const projects=data.projects.filter(x=>x.id!==p.id);change({...data,projects});setSelected(projects[0]?.id||'')}}}>Delete project</button></div></section>:<section className="project-editor"><h2>Add your next project.</h2><p>Create a draft, add screenshots, then publish when it’s ready.</p><button className="button" onClick={add}>+ Add project</button></section>}</div></main>
+export default function ProjectManager({ initial }: { initial: Portfolio }) {
+  const [data, setData] = useState(initial);
+  const [selected, setSelected] = useState(initial.projects[0]?.id || '');
+  const [dirty, setDirty] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [status, setStatus] = useState('');
+  const file = useRef<HTMLInputElement>(null);
+  const current = useRef(data);
+  current.current = data;
+  async function optimizeImage(file: File): Promise<File> {
+    if (
+      !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      file.size > 3 * 1024 * 1024
+    )
+      return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        bitmap.close();
+        return file;
+      }
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/webp', 0.82),
+      );
+      return blob
+        ? new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' })
+        : file;
+    } catch {
+      return file;
+    }
+  }
+  const p = data.projects.find((p) => p.id === selected);
+  useEffect(() => {
+    const f = (e: BeforeUnloadEvent) => {
+      if (dirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', f);
+    return () => window.removeEventListener('beforeunload', f);
+  }, [dirty]);
+  function change(d: Portfolio) {
+    setData(d);
+    setDirty(true);
+    setStatus('');
+  }
+  function update(patch: Partial<Project>) {
+    change({
+      ...data,
+      projects: data.projects.map((x) => (x.id === selected ? { ...x, ...patch } : x)),
+    });
+  }
+  function add() {
+    const id = crypto.randomUUID();
+    change({
+      ...data,
+      projects: [
+        ...data.projects,
+        {
+          id,
+          title: 'New project',
+          tagline: '',
+          category: 'WEB APPLICATION',
+          summary: '',
+          problem: '',
+          solution: '',
+          note: '',
+          features: [],
+          technologies: [],
+          images: [],
+          liveUrl: '',
+          githubUrl: '',
+          published: false,
+        },
+      ],
+    });
+    setSelected(id);
+  }
+  async function save() {
+    const snapshot = data;
+    setBusy(true);
+    setStatus('Saving…');
+    try {
+      const r = await fetch('/api/portfolio', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = (await r.json()) as { error?: string };
+      if (!r.ok) throw Error(result.error);
+      if (current.current === snapshot) setDirty(false);
+      setStatus('Saved online. Published projects are now updated on the portfolio.');
+    } catch (e) {
+      setStatus('Could not save: ' + (e instanceof Error ? e.message : 'Try again.'));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function upload(fs: FileList | null) {
+    if (!fs || !p) return;
+    const target = p.id;
+    setUploading(true);
+    setStatus('Uploading screenshots…');
+    try {
+      const images: { url: string; alt: string }[] = [];
+      for (const f of Array.from(fs)) {
+        const form = new FormData();
+        form.append('file', await optimizeImage(f));
+        const r = await fetch('/api/upload', { method: 'POST', body: form });
+        const j = (await r.json()) as { error?: string; url: string };
+        if (!r.ok) throw Error(j.error);
+        images.push({ url: j.url, alt: f.name.replace(/\.[^.]+$/, '') });
+      }
+      setData((d) => ({
+        ...d,
+        projects: d.projects.map((x) =>
+          x.id === target ? { ...x, images: [...x.images, ...images] } : x,
+        ),
+      }));
+      setDirty(true);
+      setStatus('Screenshots uploaded. Save changes to add them to the portfolio.');
+    } catch (e) {
+      setStatus('Upload failed: ' + (e instanceof Error ? e.message : 'Try again.'));
+    } finally {
+      setUploading(false);
+      if (file.current) file.current.value = '';
+    }
+  }
+  function reorder(offset: number) {
+    const arr = [...data.projects];
+    const i = arr.findIndex((x) => x.id === selected);
+    if (i + offset < 0 || i + offset >= arr.length) return;
+    [arr[i], arr[i + offset]] = [arr[i + offset], arr[i]];
+    change({ ...data, projects: arr });
+  }
+  return (
+    <main className="admin-shell">
+      <div
+        onClick={(e) => {
+          if (
+            dirty &&
+            (e.target as HTMLElement).closest('a') &&
+            !confirm('You have unsaved changes. Leave this page?')
+          )
+            e.preventDefault();
+        }}
+      >
+        <AdminNav active="projects" />
+      </div>
+      <header className="admin-top">
+        <div>
+          <a
+            className="underlink"
+            href="/"
+            onClick={(e) => {
+              if (dirty && !confirm('You have unsaved changes. Leave this page?'))
+                e.preventDefault();
+            }}
+          >
+            ← View portfolio
+          </a>
+          <h1>
+            Portfolio manager<span>.</span>
+          </h1>
+          <p>Project content, screenshots, and contact details. Saved online across devices.</p>
+        </div>
+        <button className="button" disabled={busy || uploading || !dirty} onClick={save}>
+          {busy ? 'Saving…' : dirty ? 'Save changes ↗' : 'All changes saved ✓'}
+        </button>
+      </header>
+      <div className="save-status" role="status">
+        {status || (dirty ? 'You have unsaved changes.' : 'Your saved portfolio is up to date.')}
+      </div>
+      <details className="profile-settings">
+        <summary>Your profile & contact details</summary>
+        <div className="editor-fields">
+          {(
+            [
+              'name',
+              'role',
+              'headline',
+              'intro',
+              'email',
+              'whatsapp',
+              'linkedin',
+              'github',
+            ] as const
+          ).map((k) => (
+            <label key={k}>
+              {k === 'whatsapp'
+                ? 'WhatsApp (include country code)'
+                : k === 'headline'
+                  ? 'Headline (use a new line for the second line)'
+                  : k}
+              <textarea
+                rows={k === 'intro' ? 3 : k === 'headline' ? 2 : 1}
+                value={data[k]}
+                onChange={(e) => change({ ...data, [k]: e.target.value })}
+              />
+            </label>
+          ))}
+        </div>
+        <p className="field-help">
+          Email and WhatsApp become inquiry links on the site. Empty social links stay hidden.
+        </p>
+      </details>
+      <div className="admin-grid">
+        <aside className="project-sidebar">
+          <div className="sidebar-heading">
+            <h2>Projects ({data.projects.length})</h2>
+            <button className="small-button" onClick={add} disabled={busy || uploading}>
+              + Add
+            </button>
+          </div>
+          {data.projects.map((x, i) => (
+            <button
+              key={x.id}
+              className={'project-select ' + (selected === x.id ? 'selected' : '')}
+              onClick={() => setSelected(x.id)}
+            >
+              <span>0{i + 1}</span>
+              <div>
+                <b>{x.title}</b>
+                <small>{x.published ? 'Published' : 'Draft'}</small>
+              </div>
+            </button>
+          ))}
+        </aside>
+        {p ? (
+          <section className="project-editor">
+            <div className="editor-heading">
+              <div>
+                <span className="eyebrow">EDIT PROJECT</span>
+                <h2>{p.title}</h2>
+              </div>
+              <label className="toggle">
+                <input
+                  type="checkbox"
+                  checked={p.published}
+                  onChange={(e) => update({ published: e.target.checked })}
+                />{' '}
+                Published
+              </label>
+            </div>
+            <div className="editor-fields">
+              {(
+                [
+                  'title',
+                  'tagline',
+                  'category',
+                  'summary',
+                  'problem',
+                  'solution',
+                  'note',
+                  'liveUrl',
+                  'githubUrl',
+                ] as const
+              ).map((k) => (
+                <label key={k}>
+                  {
+                    {
+                      title: 'Project name',
+                      tagline: 'Tagline',
+                      category: 'Project category',
+                      summary: 'Short description',
+                      problem: 'The challenge',
+                      solution: 'The solution / your contribution',
+                      note: 'Project context / credits',
+                      liveUrl: 'Live project URL (optional)',
+                      githubUrl: 'GitHub URL (optional)',
+                    }[k]
+                  }
+                  <textarea
+                    rows={['summary', 'problem', 'solution', 'note'].includes(k) ? 3 : 1}
+                    value={p[k]}
+                    onChange={(e) => update({ [k]: e.target.value })}
+                  />
+                </label>
+              ))}
+              <label>
+                Technologies (comma separated)
+                <input
+                  value={p.technologies.join(', ')}
+                  onChange={(e) =>
+                    update({ technologies: e.target.value.split(',').map((x) => x.trimStart()) })
+                  }
+                />
+              </label>
+              <label>
+                Features (one per line)
+                <textarea
+                  rows={4}
+                  value={p.features.join('\n')}
+                  onChange={(e) => update({ features: e.target.value.split('\n') })}
+                />
+              </label>
+            </div>
+            <div className="screenshots-heading">
+              <div>
+                <h3>Screenshots</h3>
+                <p>First image is the cover. PNG, JPEG, or WebP, up to 3 MB each.</p>
+              </div>
+              <button
+                className="small-button"
+                disabled={uploading || busy}
+                onClick={() => file.current?.click()}
+              >
+                {uploading ? 'Uploading…' : '+ Upload images'}
+              </button>
+              <input
+                ref={file}
+                type="file"
+                multiple
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={(e) => upload(e.target.files)}
+              />
+            </div>
+            <div className="admin-images">
+              {p.images.map((im, i) => (
+                <div className="admin-image" key={im.url + i}>
+                  <img src={previewUrl(im.url, 160)} alt={im.alt} loading="lazy" decoding="async" />
+                  <label>
+                    Image description
+                    <input
+                      value={im.alt}
+                      onChange={(e) =>
+                        update({
+                          images: p.images.map((x, j) =>
+                            i === j ? { ...x, alt: e.target.value } : x,
+                          ),
+                        })
+                      }
+                    />
+                  </label>
+                  <div className="image-actions">
+                    <button
+                      className="small-button"
+                      disabled={i === 0}
+                      onClick={() =>
+                        update({ images: [im, ...p.images.filter((_, j) => i !== j)] })
+                      }
+                    >
+                      {i === 0 ? 'Cover image' : 'Make cover'}
+                    </button>
+                    <button
+                      className="small-button danger"
+                      onClick={() => update({ images: p.images.filter((_, j) => i !== j) })}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="editor-bottom">
+              <div>
+                <button
+                  className="small-button"
+                  onClick={() => reorder(-1)}
+                  disabled={data.projects[0]?.id === p.id}
+                >
+                  ↑ Move up
+                </button>
+                <button
+                  className="small-button"
+                  onClick={() => reorder(1)}
+                  disabled={data.projects.at(-1)?.id === p.id}
+                >
+                  ↓ Move down
+                </button>
+              </div>
+              <button
+                className="small-button danger"
+                onClick={() => {
+                  if (confirm('Remove this project? The change takes effect when you save.')) {
+                    const projects = data.projects.filter((x) => x.id !== p.id);
+                    change({ ...data, projects });
+                    setSelected(projects[0]?.id || '');
+                  }
+                }}
+              >
+                Delete project
+              </button>
+            </div>
+          </section>
+        ) : (
+          <section className="project-editor">
+            <h2>Add your next project.</h2>
+            <p>Create a draft, add screenshots, then publish when it’s ready.</p>
+            <button className="button" onClick={add}>
+              + Add project
+            </button>
+          </section>
+        )}
+      </div>
+    </main>
+  );
 }

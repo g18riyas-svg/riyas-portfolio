@@ -1,38 +1,597 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
-import type {Portfolio,Project} from '../lib/portfolio';
-import {previewUrl,previewSrcSet} from '../lib/image-preview';
+import { useEffect, useRef, useState } from 'react';
+import type { Portfolio, Project } from '../lib/portfolio';
+import { previewUrl, previewSrcSet } from '../lib/image-preview';
 import InquiryForm from './InquiryForm';
 import WhatsAppIcon from './WhatsAppIcon';
-export default function PortfolioView({data,canEdit}:{data:Portfolio;canEdit:boolean}){
- const [project,setProject]=useState<Project|null>(null);const [index,setIndex]=useState(0);const dialog=useRef<HTMLDialogElement>(null);
- useEffect(()=>{if(project){dialog.current?.showModal();dialog.current?.scrollTo(0,0);document.body.style.overflow='hidden'}else{dialog.current?.close();document.body.style.overflow=''}return()=>{document.body.style.overflow=''}},[project]);
- useEffect(()=>{
-  const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
-  const nodes=document.querySelectorAll<HTMLElement>('.section-heading,.project-card,.about>div,.service-row,.process-grid article,.contact');
-  let observer:IntersectionObserver|undefined;
-  if(!reduce.matches && 'IntersectionObserver' in window){
-   observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('is-visible');observer?.unobserve(e.target)}}),{threshold:.08});
-   nodes.forEach((el,i)=>{el.classList.add('scroll-reveal');el.style.setProperty('--reveal-delay',`${i%2*70}ms`);observer?.observe(el)});
-  }
-  const bar=document.getElementById('reading-progress');let frame=0;
-  const update=()=>{frame=0;const total=document.documentElement.scrollHeight-window.innerHeight;bar?.style.setProperty('transform',`scaleX(${total>0?Math.min(1,window.scrollY/total):0})`)};
-  const scroll=()=>{if(!frame)frame=requestAnimationFrame(update)};update();window.addEventListener('scroll',scroll,{passive:true});
-  return()=>{observer?.disconnect();nodes.forEach(el=>el.classList.remove('scroll-reveal'));window.removeEventListener('scroll',scroll);cancelAnimationFrame(frame)};
- },[]);
- useEffect(()=>{
-  if(!project)return;
-  const onKey=(event:KeyboardEvent)=>{
-   if(event.key==='ArrowRight'){event.preventDefault();setIndex(i=>Math.min(i+1,project.images.length-1))}
-   if(event.key==='ArrowLeft'){event.preventDefault();setIndex(i=>Math.max(0,i-1))}
+export default function PortfolioView({ data, canEdit }: { data: Portfolio; canEdit: boolean }) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [index, setIndex] = useState(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (project) {
+      dialog.current?.showModal();
+      dialog.current?.scrollTo(0, 0);
+      document.body.style.overflow = 'hidden';
+    } else {
+      dialog.current?.close();
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [project]);
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const nodes = document.querySelectorAll<HTMLElement>(
+      '.section-heading,.project-card,.about>div,.service-row,.process-grid article,.contact',
+    );
+    let observer: IntersectionObserver | undefined;
+    if (!reduce.matches && 'IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add('is-visible');
+              observer?.unobserve(e.target);
+            }
+          }),
+        { threshold: 0.08 },
+      );
+      nodes.forEach((el, i) => {
+        el.classList.add('scroll-reveal');
+        el.style.setProperty('--reveal-delay', `${(i % 2) * 70}ms`);
+        observer?.observe(el);
+      });
+    }
+    const bar = document.getElementById('reading-progress');
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      bar?.style.setProperty(
+        'transform',
+        `scaleX(${total > 0 ? Math.min(1, window.scrollY / total) : 0})`,
+      );
+    };
+    const scroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', scroll, { passive: true });
+    return () => {
+      observer?.disconnect();
+      nodes.forEach((el) => el.classList.remove('scroll-reveal'));
+      window.removeEventListener('scroll', scroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+  useEffect(() => {
+    if (!project) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setIndex((i) => Math.min(i + 1, project.images.length - 1));
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setIndex((i) => Math.max(0, i - 1));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [project]);
+  const open = (p: Project) => {
+    setIndex(0);
+    setProject(p);
   };
-  window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);
- },[project]);
- const open=(p:Project)=>{setIndex(0);setProject(p)};
- const heroProject=data.projects.find(p=>p.id==='riders')||data.projects.find(p=>/pos/i.test(p.title));
- const heroImage=heroProject?.images[1]||heroProject?.images[0];
- const gymProject=data.projects.find(p=>p.id==='fitsync');
- const phoneImage=gymProject?.images[2];
- const email=data.email;const wa=data.whatsapp.replace(/\D/g,'');
- return <><a className="skip-link" href="#main-content">Skip to content</a><div id="reading-progress" aria-hidden="true"/><header className="header"><a className="brand" href="#"><img className="header-avatar" src="/profile/riyas-avatar.webp" alt="Risme Mohomad Riyas" width={44} height={44} decoding="async"/><span>{data.name}<small>{data.role}</small></span></a><nav aria-label="Main navigation"><a href="#work">Work</a><a href="#about">About</a><a href="#services">Services</a></nav><div className="header-actions"><a href="#contact" className="outline-button">Let’s talk <span>↗</span></a><details className="mobile-menu"><summary aria-label="Open navigation">Menu <span>☰</span></summary><nav aria-label="Mobile navigation" onClick={e=>{if((e.target as HTMLElement).closest('a'))e.currentTarget.closest('details')?.removeAttribute('open')}}><a href="#work">Selected work ↗</a><a href="#about">About me ↗</a><a href="#services">Services ↗</a><a href="#contact">Contact ↗</a></nav></details></div></header><main id="main-content" tabIndex={-1} className="wrap"><section className="hero"><div className="eyebrow"><span className="status-dot"/> INDEPENDENT DEVELOPER · SRI LANKA</div><div className="hero-grid"><div><h1>{data.headline.split('\n').map((s,i)=><span key={i} className={i?'accent':''}>{s}</span>)}</h1><p className="hero-copy">{data.intro}</p><div className="hero-actions"><a href="#work" className="button">Explore my work <span>↘</span></a><a className="underlink" href="#contact">Discuss a project ↗</a></div></div><div className="identity-art" aria-hidden="true"><div className="orbital"/><div className="orbital second-orbit"/><div className="art-grid"/><div className="art-label">FROM WORKFLOW TO WORKING SOFTWARE</div><div className="hero-screen"><div className="screen-chrome"><span/><span/><span/><b>RIDER CHOICE / POINT OF SALE</b></div>{heroImage&&<img src={previewUrl(heroImage.url,640)} srcSet={previewSrcSet(heroImage.url)} sizes="(max-width:700px) 280px, 420px" alt="" loading="eager" fetchPriority="high" decoding="async"/>}</div><div className="hero-phone">{phoneImage&&<img src={previewUrl(phoneImage.url,640)} alt="" loading="eager" decoding="async"/>}</div><div className="floating-label label-one"><span>↗</span> Web to mobile.</div><div className="floating-label label-two"><span>✳</span> Connected by design.</div><div className="art-bottom"><span>DESIGNED TO WORK TOGETHER</span><span>01 — ∞</span></div></div></div><div className="hero-footer"><span><i>01</i> WEB APPLICATIONS</span><span><i>02</i> BUSINESS SYSTEMS</span><span><i>03</i> MOBILE EXPERIENCES</span><a href="#work">SCROLL TO EXPLORE <b>↓</b></a></div></section><section className="section" id="work"><div className="section-heading"><div><div className="eyebrow">01 / SELECTED PROJECTS</div><h2>From complex workflows<br/>to useful software.</h2></div><p>Explore the interfaces and development scope behind my work in wellness, fitness, education, and retail.</p></div><div className="work-note"><span className="status-dot"/> {data.projects.length} SELECTED PROJECTS <span>BUILT ACROSS WEB, MOBILE & DESKTOP</span></div><div className="project-grid">{data.projects.map((p,i)=><article className={'project-card theme-'+(i%4)} key={p.id}><button className="project-cover" onPointerMove={e=>{if(e.pointerType==='mouse'){const r=e.currentTarget.getBoundingClientRect();e.currentTarget.style.setProperty('--pointer-x',`${e.clientX-r.left}px`);e.currentTarget.style.setProperty('--pointer-y',`${e.clientY-r.top}px`)}}} onClick={()=>open(p)} aria-label={'Explore '+p.title}>{p.images[0]?<img src={previewUrl(p.images[0].url,640)} srcSet={previewSrcSet(p.images[0].url)} sizes="(max-width:700px) calc(100vw - 84px), (max-width:1000px) 42vw, 520px" alt={p.images[0].alt} loading="lazy" decoding="async"/>:<div className="empty-cover">{p.title}</div>}<span className="cover-top"><span>{String(i+1).padStart(2,'0')} / {p.category}</span><span className="arrow-circle">↗</span></span><span className="cover-bottom">{p.images.length} SCREENSHOTS <span>EXPLORE PROJECT ↗</span></span></button><div className="project-title"><h3><button onClick={()=>open(p)}>{p.title}</button></h3><span>↗</span></div><p>{p.summary}</p><div className="chips">{p.technologies.map(t=><span key={t}>{t}</span>)}</div><button className="underlink case-link" onClick={()=>open(p)}>View project details ↗</button></article>)}</div></section><section id="about" className="section about"><div><div className="eyebrow">02 / THE DEVELOPER</div><h2>Hi, I’m Riyas.<br/><span className="serif-accent">I connect the pieces.</span></h2><div className="about-portrait"><img src="/profile/riyas-portrait.webp" alt="Risme Mohomad Riyas wearing a suit" width={650} height={776} loading="lazy" decoding="async"/><div className="portrait-caption"><span>{data.name}</span><small>{data.role} · Sri Lanka</small></div></div></div><div><p className="about-lead">Your website, admin dashboard, and mobile app should work as one system.</p><p>I’m a full-stack developer based in Sri Lanka. My work spans customer-facing experiences and the systems behind them—from booking and memberships to inventory, learning platforms, and business reporting.</p><p>I start with the workflow, define the scope, and build toward a practical result you can review at each milestone.</p><div className="focus"><span>MY FOCUS</span><b>Clear interfaces. Connected workflows. Maintainable systems.</b></div></div></section><section id="services" className="section"><div className="section-heading"><div><div className="eyebrow">03 / HOW I CAN HELP</div><h2>Built for the way<br/>your business works.</h2></div><p>Custom development with clear deliverables and an agreed scope.</p></div>{[['01','Business management systems','Booking, POS, inventory, memberships, and dashboards that connect daily operations.'],['02','Web applications & portals','Customer experiences, learning platforms, admin tools, and connected backend services.'],['03','Mobile experiences','Customer and member applications connected to the same business platform.']].map(([n,title,desc])=><div className="service-row" key={n}><span>{n}</span><h3>{title}</h3><p>{desc}</p><span>↗</span></div>)}</section><section className="section process-section"><div className="eyebrow">04 / THE APPROACH</div><h2>A clear path from idea to delivery.</h2><div className="process-grid">{[['Discover','Understand your business, current workflow, priorities, and constraints.'],['Define & build','Agree on scope and milestones, then review working software as it develops.'],['Deliver & hand over','Validate the agreed workflows and prepare deployment, documentation, and handover.']].map(([title,desc],i)=><article key={title}><span>0{i+1}</span><h3>{title}</h3><p>{desc}</p></article>)}</div></section><section id="contact" className="contact contact-with-form"><div className="eyebrow">05 / YOUR NEXT PROJECT</div><div className="contact-grid"><div><h2>Have a workflow<br/>worth improving?</h2><p>Tell me what you’re building, what isn’t working today, and what a successful first version looks like. Use the form or contact me directly.</p></div><div className="contact-actions">{email?<a className="button dark" href={'mailto:'+email+'?subject='+encodeURIComponent('Project inquiry')}>Email me <span>↗</span></a>:<div className="contact-pending"><b>Contact details coming soon.</b><p>Direct inquiry links will appear here once added.</p></div>}{wa&&<a className="contact-secondary whatsapp-button" href={'https://wa.me/'+wa+'?text='+encodeURIComponent('Hi Riyas, I’d like to discuss a project.')} target="_blank" rel="noreferrer"><WhatsAppIcon/><span>Chat on WhatsApp</span><span aria-hidden="true">↗</span></a>}<span className="contact-meta">CUSTOM DEVELOPMENT · FIXED SCOPE · MILESTONE DELIVERY</span></div></div><InquiryForm/></section></main><footer className="wrap footer"><span>© {new Date().getFullYear()} {data.name}</span><div>{data.linkedin&&<a href={data.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a>}{data.github&&<a href={data.github} target="_blank" rel="noreferrer">GitHub ↗</a>}{canEdit&&<a href="/admin">Manage portfolio ↗</a>}<a href="#">Back to top ↑</a></div></footer><dialog ref={dialog} className="project-dialog" aria-describedby="project-dialog-description" aria-labelledby="project-dialog-title" onCancel={()=>setProject(null)} onClick={e=>{if(e.target===dialog.current)setProject(null)}}>{project&&<div className="dialog-content"><div className="dialog-header"><span>{project.category}</span><button onClick={()=>setProject(null)} aria-label="Close project">✕</button></div><h2 id="project-dialog-title">{project.title}</h2><p id="project-dialog-description" className="dialog-tagline">{project.tagline}</p>{project.images.length>0&&<><div className="gallery-stage"><img key={project.images[index]?.url} src={project.images[index]?.url} alt={project.images[index]?.alt} decoding="async" fetchPriority="high"/></div><div className="gallery-controls"><button disabled={index===0} onClick={()=>setIndex(index-1)} aria-label="Previous screenshot">←</button><span aria-live="polite" aria-atomic="true">{index+1} / {project.images.length} · {project.images[index]?.alt}</span><button disabled={index===project.images.length-1} onClick={()=>setIndex(index+1)} aria-label="Next screenshot">→</button></div><div className="thumbnails">{project.images.map((im,i)=><button key={im.url+i} className={i===index?'active':''} aria-current={i===index?'true':undefined} onClick={()=>setIndex(i)} aria-label={'View '+im.alt}><img src={previewUrl(im.url,160)} alt={im.alt} loading="lazy" decoding="async"/></button>)}</div></>}<p className="dialog-summary">{project.summary}</p><div className="case-columns"><div><h3>The challenge</h3><p>{project.problem}</p></div><div><h3>The solution</h3><p>{project.solution}</p></div></div><div className="feature-list">{project.features.map(f=><span key={f}>↗ {f}</span>)}</div><div className="chips">{project.technologies.map(t=><span key={t}>{t}</span>)}</div>{project.note&&<p className="project-note">{project.note}</p>}<div className="dialog-links">{project.liveUrl&&<a className="button" href={project.liveUrl} target="_blank" rel="noreferrer">Live project ↗</a>}{project.githubUrl&&<a className="outline-button" href={project.githubUrl} target="_blank" rel="noreferrer">View source ↗</a>}</div></div>}</dialog></>;
+  const heroProject =
+    data.projects.find((p) => p.id === 'riders') || data.projects.find((p) => /pos/i.test(p.title));
+  const heroImage = heroProject?.images[1] || heroProject?.images[0];
+  const gymProject = data.projects.find((p) => p.id === 'fitsync');
+  const phoneImage = gymProject?.images[2];
+  const email = data.email;
+  const wa = data.whatsapp.replace(/\D/g, '');
+  return (
+    <>
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <div id="reading-progress" aria-hidden="true" />
+      <header className="header">
+        <a className="brand" href="#">
+          <img
+            className="header-avatar"
+            src="/profile/riyas-avatar.webp"
+            alt="Risme Mohomad Riyas"
+            width={44}
+            height={44}
+            decoding="async"
+          />
+          <span>
+            {data.name}
+            <small>{data.role}</small>
+          </span>
+        </a>
+        <nav aria-label="Main navigation">
+          <a href="#work">Work</a>
+          <a href="#about">About</a>
+          <a href="#services">Services</a>
+        </nav>
+        <div className="header-actions">
+          <a href="#contact" className="outline-button">
+            Let’s talk <span>↗</span>
+          </a>
+          <details className="mobile-menu">
+            <summary aria-label="Open navigation">
+              Menu <span>☰</span>
+            </summary>
+            <nav
+              aria-label="Mobile navigation"
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('a'))
+                  e.currentTarget.closest('details')?.removeAttribute('open');
+              }}
+            >
+              <a href="#work">Selected work ↗</a>
+              <a href="#about">About me ↗</a>
+              <a href="#services">Services ↗</a>
+              <a href="#contact">Contact ↗</a>
+            </nav>
+          </details>
+        </div>
+      </header>
+      <main id="main-content" tabIndex={-1} className="wrap">
+        <section className="hero">
+          <div className="eyebrow">
+            <span className="status-dot" /> INDEPENDENT DEVELOPER · SRI LANKA
+          </div>
+          <div className="hero-grid">
+            <div>
+              <h1>
+                {data.headline.split('\n').map((s, i) => (
+                  <span key={i} className={i ? 'accent' : ''}>
+                    {s}
+                  </span>
+                ))}
+              </h1>
+              <p className="hero-copy">{data.intro}</p>
+              <div className="hero-actions">
+                <a href="#work" className="button">
+                  Explore my work <span>↘</span>
+                </a>
+                <a className="underlink" href="#contact">
+                  Discuss a project ↗
+                </a>
+              </div>
+            </div>
+            <div className="identity-art" aria-hidden="true">
+              <div className="orbital" />
+              <div className="orbital second-orbit" />
+              <div className="art-grid" />
+              <div className="art-label">FROM WORKFLOW TO WORKING SOFTWARE</div>
+              <div className="hero-screen">
+                <div className="screen-chrome">
+                  <span />
+                  <span />
+                  <span />
+                  <b>RIDER CHOICE / POINT OF SALE</b>
+                </div>
+                {heroImage && (
+                  <img
+                    src={previewUrl(heroImage.url, 640)}
+                    srcSet={previewSrcSet(heroImage.url)}
+                    sizes="(max-width:700px) 280px, 420px"
+                    alt=""
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                  />
+                )}
+              </div>
+              <div className="hero-phone">
+                {phoneImage && (
+                  <img
+                    src={previewUrl(phoneImage.url, 640)}
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                  />
+                )}
+              </div>
+              <div className="floating-label label-one">
+                <span>↗</span> Web to mobile.
+              </div>
+              <div className="floating-label label-two">
+                <span>✳</span> Connected by design.
+              </div>
+              <div className="art-bottom">
+                <span>DESIGNED TO WORK TOGETHER</span>
+                <span>01 — ∞</span>
+              </div>
+            </div>
+          </div>
+          <div className="hero-footer">
+            <span>
+              <i>01</i> WEB APPLICATIONS
+            </span>
+            <span>
+              <i>02</i> BUSINESS SYSTEMS
+            </span>
+            <span>
+              <i>03</i> MOBILE EXPERIENCES
+            </span>
+            <a href="#work">
+              SCROLL TO EXPLORE <b>↓</b>
+            </a>
+          </div>
+        </section>
+        <section className="section" id="work">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">01 / SELECTED PROJECTS</div>
+              <h2>
+                From complex workflows
+                <br />
+                to useful software.
+              </h2>
+            </div>
+            <p>
+              Explore the interfaces and development scope behind my work in wellness, fitness,
+              education, and retail.
+            </p>
+          </div>
+          <div className="work-note">
+            <span className="status-dot" /> {data.projects.length} SELECTED PROJECTS{' '}
+            <span>BUILT ACROSS WEB, MOBILE & DESKTOP</span>
+          </div>
+          <div className="project-grid">
+            {data.projects.map((p, i) => (
+              <article className={'project-card theme-' + (i % 4)} key={p.id}>
+                <button
+                  className="project-cover"
+                  onPointerMove={(e) => {
+                    if (e.pointerType === 'mouse') {
+                      const r = e.currentTarget.getBoundingClientRect();
+                      e.currentTarget.style.setProperty('--pointer-x', `${e.clientX - r.left}px`);
+                      e.currentTarget.style.setProperty('--pointer-y', `${e.clientY - r.top}px`);
+                    }
+                  }}
+                  onClick={() => open(p)}
+                  aria-label={'Explore ' + p.title}
+                >
+                  {p.images[0] ? (
+                    <img
+                      src={previewUrl(p.images[0].url, 640)}
+                      srcSet={previewSrcSet(p.images[0].url)}
+                      sizes="(max-width:700px) calc(100vw - 84px), (max-width:1000px) 42vw, 520px"
+                      alt={p.images[0].alt}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="empty-cover">{p.title}</div>
+                  )}
+                  <span className="cover-top">
+                    <span>
+                      {String(i + 1).padStart(2, '0')} / {p.category}
+                    </span>
+                    <span className="arrow-circle">↗</span>
+                  </span>
+                  <span className="cover-bottom">
+                    {p.images.length} SCREENSHOTS <span>EXPLORE PROJECT ↗</span>
+                  </span>
+                </button>
+                <div className="project-title">
+                  <h3>
+                    <button onClick={() => open(p)}>{p.title}</button>
+                  </h3>
+                  <span>↗</span>
+                </div>
+                <p>{p.summary}</p>
+                <div className="chips">
+                  {p.technologies.map((t) => (
+                    <span key={t}>{t}</span>
+                  ))}
+                </div>
+                <button className="underlink case-link" onClick={() => open(p)}>
+                  View project details ↗
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section id="about" className="section about">
+          <div>
+            <div className="eyebrow">02 / THE DEVELOPER</div>
+            <h2>
+              Hi, I’m Riyas.
+              <br />
+              <span className="serif-accent">I connect the pieces.</span>
+            </h2>
+            <div className="about-portrait">
+              <img
+                src="/profile/riyas-portrait.webp"
+                alt="Risme Mohomad Riyas wearing a suit"
+                width={650}
+                height={776}
+                loading="lazy"
+                decoding="async"
+              />
+              <div className="portrait-caption">
+                <span>{data.name}</span>
+                <small>{data.role} · Sri Lanka</small>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p className="about-lead">
+              Your website, admin dashboard, and mobile app should work as one system.
+            </p>
+            <p>
+              I’m a full-stack developer based in Sri Lanka. My work spans customer-facing
+              experiences and the systems behind them—from booking and memberships to inventory,
+              learning platforms, and business reporting.
+            </p>
+            <p>
+              I start with the workflow, define the scope, and build toward a practical result you
+              can review at each milestone.
+            </p>
+            <div className="focus">
+              <span>MY FOCUS</span>
+              <b>Clear interfaces. Connected workflows. Maintainable systems.</b>
+            </div>
+          </div>
+        </section>
+        <section id="services" className="section">
+          <div className="section-heading">
+            <div>
+              <div className="eyebrow">03 / HOW I CAN HELP</div>
+              <h2>
+                Built for the way
+                <br />
+                your business works.
+              </h2>
+            </div>
+            <p>Custom development with clear deliverables and an agreed scope.</p>
+          </div>
+          {[
+            [
+              '01',
+              'Business management systems',
+              'Booking, POS, inventory, memberships, and dashboards that connect daily operations.',
+            ],
+            [
+              '02',
+              'Web applications & portals',
+              'Customer experiences, learning platforms, admin tools, and connected backend services.',
+            ],
+            [
+              '03',
+              'Mobile experiences',
+              'Customer and member applications connected to the same business platform.',
+            ],
+          ].map(([n, title, desc]) => (
+            <div className="service-row" key={n}>
+              <span>{n}</span>
+              <h3>{title}</h3>
+              <p>{desc}</p>
+              <span>↗</span>
+            </div>
+          ))}
+        </section>
+        <section className="section process-section">
+          <div className="eyebrow">04 / THE APPROACH</div>
+          <h2>A clear path from idea to delivery.</h2>
+          <div className="process-grid">
+            {[
+              [
+                'Discover',
+                'Understand your business, current workflow, priorities, and constraints.',
+              ],
+              [
+                'Define & build',
+                'Agree on scope and milestones, then review working software as it develops.',
+              ],
+              [
+                'Deliver & hand over',
+                'Validate the agreed workflows and prepare deployment, documentation, and handover.',
+              ],
+            ].map(([title, desc], i) => (
+              <article key={title}>
+                <span>0{i + 1}</span>
+                <h3>{title}</h3>
+                <p>{desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section id="contact" className="contact contact-with-form">
+          <div className="eyebrow">05 / YOUR NEXT PROJECT</div>
+          <div className="contact-grid">
+            <div>
+              <h2>
+                Have a workflow
+                <br />
+                worth improving?
+              </h2>
+              <p>
+                Tell me what you’re building, what isn’t working today, and what a successful first
+                version looks like. Use the form or contact me directly.
+              </p>
+            </div>
+            <div className="contact-actions">
+              {email ? (
+                <a
+                  className="button dark"
+                  href={'mailto:' + email + '?subject=' + encodeURIComponent('Project inquiry')}
+                >
+                  Email me <span>↗</span>
+                </a>
+              ) : (
+                <div className="contact-pending">
+                  <b>Contact details coming soon.</b>
+                  <p>Direct inquiry links will appear here once added.</p>
+                </div>
+              )}
+              {wa && (
+                <a
+                  className="contact-secondary whatsapp-button"
+                  href={
+                    'https://wa.me/' +
+                    wa +
+                    '?text=' +
+                    encodeURIComponent('Hi Riyas, I’d like to discuss a project.')
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <WhatsAppIcon />
+                  <span>Chat on WhatsApp</span>
+                  <span aria-hidden="true">↗</span>
+                </a>
+              )}
+              <span className="contact-meta">
+                CUSTOM DEVELOPMENT · FIXED SCOPE · MILESTONE DELIVERY
+              </span>
+            </div>
+          </div>
+          <InquiryForm />
+        </section>
+      </main>
+      <footer className="wrap footer">
+        <span>
+          © {new Date().getFullYear()} {data.name}
+        </span>
+        <div>
+          {data.linkedin && (
+            <a href={data.linkedin} target="_blank" rel="noreferrer">
+              LinkedIn ↗
+            </a>
+          )}
+          {data.github && (
+            <a href={data.github} target="_blank" rel="noreferrer">
+              GitHub ↗
+            </a>
+          )}
+          {canEdit && <a href="/admin">Manage portfolio ↗</a>}
+          <a href="#">Back to top ↑</a>
+        </div>
+      </footer>
+      <dialog
+        ref={dialog}
+        className="project-dialog"
+        aria-describedby="project-dialog-description"
+        aria-labelledby="project-dialog-title"
+        onCancel={() => setProject(null)}
+        onClick={(e) => {
+          if (e.target === dialog.current) setProject(null);
+        }}
+      >
+        {project && (
+          <div className="dialog-content">
+            <div className="dialog-header">
+              <span>{project.category}</span>
+              <button onClick={() => setProject(null)} aria-label="Close project">
+                ✕
+              </button>
+            </div>
+            <h2 id="project-dialog-title">{project.title}</h2>
+            <p id="project-dialog-description" className="dialog-tagline">
+              {project.tagline}
+            </p>
+            {project.images.length > 0 && (
+              <>
+                <div className="gallery-stage">
+                  <img
+                    key={project.images[index]?.url}
+                    src={project.images[index]?.url}
+                    alt={project.images[index]?.alt}
+                    decoding="async"
+                    fetchPriority="high"
+                  />
+                </div>
+                <div className="gallery-controls">
+                  <button
+                    disabled={index === 0}
+                    onClick={() => setIndex(index - 1)}
+                    aria-label="Previous screenshot"
+                  >
+                    ←
+                  </button>
+                  <span aria-live="polite" aria-atomic="true">
+                    {index + 1} / {project.images.length} · {project.images[index]?.alt}
+                  </span>
+                  <button
+                    disabled={index === project.images.length - 1}
+                    onClick={() => setIndex(index + 1)}
+                    aria-label="Next screenshot"
+                  >
+                    →
+                  </button>
+                </div>
+                <div className="thumbnails">
+                  {project.images.map((im, i) => (
+                    <button
+                      key={im.url + i}
+                      className={i === index ? 'active' : ''}
+                      aria-current={i === index ? 'true' : undefined}
+                      onClick={() => setIndex(i)}
+                      aria-label={'View ' + im.alt}
+                    >
+                      <img
+                        src={previewUrl(im.url, 160)}
+                        alt={im.alt}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            <p className="dialog-summary">{project.summary}</p>
+            <div className="case-columns">
+              <div>
+                <h3>The challenge</h3>
+                <p>{project.problem}</p>
+              </div>
+              <div>
+                <h3>The solution</h3>
+                <p>{project.solution}</p>
+              </div>
+            </div>
+            <div className="feature-list">
+              {project.features.map((f) => (
+                <span key={f}>↗ {f}</span>
+              ))}
+            </div>
+            <div className="chips">
+              {project.technologies.map((t) => (
+                <span key={t}>{t}</span>
+              ))}
+            </div>
+            {project.note && <p className="project-note">{project.note}</p>}
+            <div className="dialog-links">
+              {project.liveUrl && (
+                <a className="button" href={project.liveUrl} target="_blank" rel="noreferrer">
+                  Live project ↗
+                </a>
+              )}
+              {project.githubUrl && (
+                <a
+                  className="outline-button"
+                  href={project.githubUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View source ↗
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </dialog>
+    </>
+  );
 }
