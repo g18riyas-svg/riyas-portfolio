@@ -1,9 +1,10 @@
+import {sameOrigin} from '../../../lib/auth';
 import {bucket} from '../../../lib/storage';
 import {getAdminUser} from '../../admin-auth';
 export const dynamic='force-dynamic';
 export async function POST(req:Request){
  if((await getAdminUser())?.email.toLowerCase()!=='g.18.riyas@gmail.com')return Response.json({error:'Owner access required'},{status:403});
- if(req.headers.get('origin')!==new URL(req.url).origin)return Response.json({error:'Invalid origin'},{status:403});
+ if(!sameOrigin(req))return Response.json({error:'Invalid origin'},{status:403});
  if(!bucket)return Response.json({error:'Storage unavailable'},{status:503});
  if(Number(req.headers.get('content-length')||0)>4200000)return Response.json({error:'Maximum file size is 3 MB'},{status:413});
  const f=(await req.formData()).get('file');if(!(f instanceof File)||f.size>3*1024*1024)return Response.json({error:'Choose a PNG, JPEG or WebP under 3 MB'},{status:400});
